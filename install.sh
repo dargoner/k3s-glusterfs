@@ -84,7 +84,7 @@ set -e
 #     Channel to use for fetching k3s download URL.
 #     Defaults to 'stable'.
 
-GITHUB_URL=https://github.com/rancher/k3s/releases
+GITHUB_URL=https://github.com/cjrpriest/k3s-glusterfs/releases
 STORAGE_URL=https://storage.googleapis.com/k3s-ci-builds
 DOWNLOADER=
 
