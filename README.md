@@ -18,6 +18,50 @@ In the mean time, those changes are committed directly to the `vendor` directory
 
 [Releases](https://github.com/cjrpriest/k3s-glusterfs/releases) are currently built for arm64
 
+## Update, build, release process
+
+### Preperation
+
+- git clone https://github.com/cjrpriest/k3s-glusterfs
+- cd k3s-glusterfs
+- git remote add upstream https://github.com/rancher/k3s.git
+
+### Creating a release
+
+- cd k3s-glusterfs
+- git fetch upstream
+- git checkout release-1.xx
+- git merge upstream/release-1.xx
+- resolve any merge conflicts
+- find the commit hash for the specific release to build for
+- git checkout hash
+- `SKIP_VALIDATE=true make`
+- create release in github using `dist/artifacts/k3s`
+- name the release `v1.xx.xx+k3s1+glusterfs`
+- update any scripts that reference the latest release 
+
+---
+ 
+# k3s-glusterfs
+
+A fork of k3s with support for GlusterFS built in
+
+## Why?
+
+Because although k3s has a great HA story, it is even better with GlusterFS
+
+This is a key supporting component of [k3s-etcd-glusterfs-metallb](https://github.com/cjrpriest/k3s-etcd-glusterfs-metallb), an install script for install and configuring Kubernetes, etcd, glusterfs and Metal LB.
+
+## How?
+
+The changes are isolated to `go` packages that are "vendored in". In theory it would be possible fork those packages, modify them, and then change the dependency to that fork. However, this would be a lengthy process that may not be warranted in the long run.
+
+In the mean time, those changes are committed directly to the `vendor` directory, and `k3s` builds are completed with the `SKIP_VALIDATE` environment variable set to `true` (`SKIP_VALIDATE=true make`)
+
+## Where?
+
+[Releases](https://github.com/cjrpriest/k3s-glusterfs/releases) are currently built for arm64
+
 ---
 
 K3s - Lightweight Kubernetes
