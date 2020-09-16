@@ -6,7 +6,7 @@ A fork of k3s with support for GlusterFS built in
 
 Because although k3s has a great HA story, it is even better with GlusterFS
 
-This is a key supporting component of [k3s-etcd-glusterfs-metallb](https://github.com/cjrpriest/k3s-etcd-glusterfs-metallb), an install script for install and configuring Kubernetes, etcd, glusterfs and Metal LB.
+This is a key supporting component of [kaymeg](https://github.com/cjrpriest/kaymeg), an install script for install and configuring Kubernetes, etcd, glusterfs and Metal LB.
 
 ## How?
 
