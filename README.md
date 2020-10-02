@@ -16,25 +16,25 @@ In the mean time, those changes are committed directly to the `vendor` directory
 
 ## Where?
 
-[Releases](https://github.com/cjrpriest/k3s-glusterfs/releases) are currently built for arm64
+[Releases](https://github.com/cjrpriest/k3s-glusterfs/releases) are currently built for amd64
 
 ## Update, build, release process
 
 ### Preperation
 
-- git clone https://github.com/cjrpriest/k3s-glusterfs
-- cd k3s-glusterfs
-- git remote add upstream https://github.com/rancher/k3s.git
+- `git clone https://github.com/cjrpriest/k3s-glusterfs`
+- `cd k3s-glusterfs`
+- `git remote add upstream https://github.com/rancher/k3s.git`
 
 ### Creating a release
 
-- cd k3s-glusterfs
-- git fetch upstream
-- git checkout release-1.xx
-- git merge upstream/release-1.xx
+- `cd k3s-glusterfs`
+- `git fetch upstream`
+- `git checkout release-1.xx`
+- `git merge upstream/release-1.xx`
 - resolve any merge conflicts
 - find the commit hash for the specific release to build for
-- git checkout hash
+- `git checkout <release-tag>` where `<release-tag>` is likely to be in the format `1.xx.xx+k3s1`
 - `SKIP_VALIDATE=true make`
 - create release in github using `dist/artifacts/k3s`
 - name the release `v1.xx.xx+k3s1+glusterfs`
