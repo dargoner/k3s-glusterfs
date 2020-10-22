@@ -39,7 +39,7 @@ func Get(ctx context.Context, agent cmds.Agent, proxy proxy.Proxy) *config.Node 
 	for {
 		agentConfig, err := get(&agent, proxy)
 		if err != nil {
-			logrus.Error(err)
+			logrus.Errorf("Failed to retrieve agent config: %v", err)
 			select {
 			case <-time.After(5 * time.Second):
 				continue
@@ -54,13 +54,12 @@ func Get(ctx context.Context, agent cmds.Agent, proxy proxy.Proxy) *config.Node 
 type HTTPRequester func(u string, client *http.Client, username, password string) ([]byte, error)
 
 func Request(path string, info *clientaccess.Info, requester HTTPRequester) ([]byte, error) {
-	u, err := url.Parse(info.URL)
+	u, err := url.Parse(info.BaseURL)
 	if err != nil {
 		return nil, err
 	}
 	u.Path = path
-	username, password, _ := clientaccess.ParseUsernamePassword(info.Token)
-	return requester(u.String(), clientaccess.GetHTTPClient(info.CACerts), username, password)
+	return requester(u.String(), clientaccess.GetHTTPClient(info.CACerts), info.Username, info.Password)
 }
 
 func getNodeNamedCrt(nodeName, nodeIP, nodePasswordFile string) HTTPRequester {
@@ -286,7 +285,7 @@ func locateOrGenerateResolvConf(envInfo *cmds.Agent) string {
 
 	tmpConf := filepath.Join(os.TempDir(), version.Program+"-resolv.conf")
 	if err := ioutil.WriteFile(tmpConf, []byte("nameserver 8.8.8.8\n"), 0444); err != nil {
-		logrus.Error(err)
+		logrus.Errorf("Failed to write %s: %v", tmpConf, err)
 		return ""
 	}
 	return tmpConf
