@@ -130,7 +130,9 @@ func run(app *cli.Context, cfg *cmds.Server) error {
 	if cmds.AgentConfig.FlannelIface != "" && cmds.AgentConfig.NodeIP == "" {
 		cmds.AgentConfig.NodeIP = netutil.GetIPFromInterface(cmds.AgentConfig.FlannelIface)
 	}
-
+	if serverConfig.ControlConfig.PrivateIP == "" && cmds.AgentConfig.NodeIP != "" {
+		serverConfig.ControlConfig.PrivateIP = cmds.AgentConfig.NodeIP
+	}
 	if serverConfig.ControlConfig.AdvertiseIP == "" && cmds.AgentConfig.NodeExternalIP != "" {
 		serverConfig.ControlConfig.AdvertiseIP = cmds.AgentConfig.NodeExternalIP
 	}
@@ -231,7 +233,7 @@ func run(app *cli.Context, cfg *cmds.Server) error {
 		return errors.Wrap(err, "Invalid tls-cipher-suites")
 	}
 
-	logrus.Info("Starting "+version.Program+" ", app.App.Version)
+	logrus.Info("Starting " + version.Program + " " + app.App.Version)
 	notifySocket := os.Getenv("NOTIFY_SOCKET")
 	os.Unsetenv("NOTIFY_SOCKET")
 
@@ -242,7 +244,8 @@ func run(app *cli.Context, cfg *cmds.Server) error {
 
 	go func() {
 		<-serverConfig.ControlConfig.Runtime.APIServerReady
-		logrus.Info("" + version.Program + " is up and running")
+		logrus.Info("Kube API server is now running")
+		logrus.Info(version.Program + " is up and running")
 		if notifySocket != "" {
 			os.Setenv("NOTIFY_SOCKET", notifySocket)
 			systemd.SdNotify(true, "READY=1\n")

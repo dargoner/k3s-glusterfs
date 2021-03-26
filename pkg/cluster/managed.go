@@ -1,17 +1,26 @@
 package cluster
 
+// A managed database is one whose lifecycle we control - initializing the cluster, adding/removing members, taking snapshots, etc.
+// This is currently just used for the embedded etcd datastore. Kine and other external etcd clusters are NOT considered managed.
+
 import (
 	"context"
-	"net"
+	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/rancher/k3s/pkg/etcd"
+
 	"github.com/rancher/k3s/pkg/cluster/managed"
+	"github.com/rancher/k3s/pkg/version"
 	"github.com/rancher/kine/pkg/endpoint"
 	"github.com/sirupsen/logrus"
 )
 
+// testClusterDB returns a channel that will be closed when the datastore connection is available.
+// The datastore is tested for readiness every 5 seconds until the test succeeds.
 func (c *Cluster) testClusterDB(ctx context.Context) (<-chan struct{}, error) {
 	result := make(chan struct{})
 	if c.managedDB == nil {
@@ -22,10 +31,10 @@ func (c *Cluster) testClusterDB(ctx context.Context) (<-chan struct{}, error) {
 	go func() {
 		defer close(result)
 		for {
-			if err := c.managedDB.Test(ctx, c.clientAccessInfo); err != nil {
+			if err := c.managedDB.Test(ctx); err != nil {
 				logrus.Infof("Failed to test data store connection: %v", err)
 			} else {
-				logrus.Infof("Data store connection OK")
+				logrus.Info(c.managedDB.EndpointName() + " data store connection OK")
 				return
 			}
 
@@ -40,21 +49,34 @@ func (c *Cluster) testClusterDB(ctx context.Context) (<-chan struct{}, error) {
 	return result, nil
 }
 
+// start starts the database, unless a cluster reset has been requested, in which case
+// it does that instead.
 func (c *Cluster) start(ctx context.Context) error {
+	resetFile := etcd.ResetFile(c.config)
 	if c.managedDB == nil {
 		return nil
 	}
 
 	if c.config.ClusterReset {
-		return c.managedDB.Reset(ctx, c.clientAccessInfo)
+		if _, err := os.Stat(resetFile); err != nil {
+			if !os.IsNotExist(err) {
+				return err
+			}
+		} else {
+			return fmt.Errorf("cluster-reset was successfully performed, please remove the cluster-reset flag and start %s normally, if you need to perform another cluster reset, you must first manually delete the %s file", version.Program, resetFile)
+		}
+		return c.managedDB.Reset(ctx)
 	}
+	// removing the reset file and ignore error if the file doesnt exist
+	os.Remove(resetFile)
 
 	return c.managedDB.Start(ctx, c.clientAccessInfo)
 }
 
-func (c *Cluster) initClusterDB(ctx context.Context, l net.Listener, handler http.Handler) (net.Listener, http.Handler, error) {
+// initClusterDB registers routes for database info with the http request handler
+func (c *Cluster) initClusterDB(ctx context.Context, handler http.Handler) (http.Handler, error) {
 	if c.managedDB == nil {
-		return l, handler, nil
+		return handler, nil
 	}
 
 	if !strings.HasPrefix(c.config.Datastore.Endpoint, c.managedDB.EndpointName()+"://") {
@@ -63,10 +85,17 @@ func (c *Cluster) initClusterDB(ctx context.Context, l net.Listener, handler htt
 		}
 	}
 
-	return c.managedDB.Register(ctx, c.config, l, handler)
+	return c.managedDB.Register(ctx, c.config, handler)
 }
 
+// assignManagedDriver assigns a driver based on a number of different configuration variables.
+// If a driver has been initialized it is used.
+// If the configured endpoint matches the name of a driver, that driver is used.
+// If no specific endpoint has been requested and creating or joining has been requested,
+// we use the default driver.
+// If none of the above are true, no managed driver is assigned.
 func (c *Cluster) assignManagedDriver(ctx context.Context) error {
+	// Check all managed drivers for an initialized database on disk; use one if found
 	for _, driver := range managed.Registered() {
 		if ok, err := driver.IsInitialized(ctx, c.config); err != nil {
 			return err
@@ -76,6 +105,8 @@ func (c *Cluster) assignManagedDriver(ctx context.Context) error {
 		}
 	}
 
+	// This is needed to allow downstreams to override driver selection logic by
+	// setting ServerConfig.Datastore.Endpoint such that it will match a driver's EndpointName
 	endpointType := strings.SplitN(c.config.Datastore.Endpoint, ":", 2)[0]
 	for _, driver := range managed.Registered() {
 		if endpointType == driver.EndpointName() {
@@ -84,6 +115,7 @@ func (c *Cluster) assignManagedDriver(ctx context.Context) error {
 		}
 	}
 
+	// If we have been asked to initialize or join a cluster, do so using the default managed database.
 	if c.config.Datastore.Endpoint == "" && (c.config.ClusterInit || (c.config.Token != "" && c.config.JoinURL != "")) {
 		for _, driver := range managed.Registered() {
 			if driver.EndpointName() == managed.Default() {

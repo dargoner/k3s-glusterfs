@@ -152,7 +152,7 @@ func Run(ctx context.Context, cfg cmds.Agent) error {
 	}
 
 	for {
-		newToken, err := clientaccess.NormalizeAndValidateTokenForUser(proxy.SupervisorURL(), cfg.Token, "node")
+		newToken, err := clientaccess.ParseAndValidateTokenForUser(proxy.SupervisorURL(), cfg.Token, "node")
 		if err != nil {
 			logrus.Error(err)
 			select {
@@ -162,7 +162,7 @@ func Run(ctx context.Context, cfg cmds.Agent) error {
 			}
 			continue
 		}
-		cfg.Token = newToken
+		cfg.Token = newToken.String()
 		break
 	}
 
@@ -177,7 +177,7 @@ func validate() error {
 	}
 
 	if !strings.Contains(string(cgroups), "cpuset") {
-		logrus.Warn("Failed to find cpuset cgroup, you may need to add \"cgroup_enable=cpuset\" to your linux cmdline (/boot/cmdline.txt on a Raspberry Pi)")
+		logrus.Warn(`Failed to find cpuset cgroup, you may need to add "cgroup_enable=cpuset" to your linux cmdline (/boot/cmdline.txt on a Raspberry Pi)`)
 	}
 
 	if !strings.Contains(string(cgroups), "memory") {

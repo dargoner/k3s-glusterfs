@@ -2,7 +2,6 @@ package managed
 
 import (
 	"context"
-	"net"
 	"net/http"
 
 	"github.com/rancher/k3s/pkg/clientaccess"
@@ -16,10 +15,10 @@ var (
 
 type Driver interface {
 	IsInitialized(ctx context.Context, config *config.Control) (bool, error)
-	Register(ctx context.Context, config *config.Control, l net.Listener, handler http.Handler) (net.Listener, http.Handler, error)
-	Reset(ctx context.Context, clientAccessInfo *clientaccess.Info) error
+	Register(ctx context.Context, config *config.Control, handler http.Handler) (http.Handler, error)
+	Reset(ctx context.Context) error
 	Start(ctx context.Context, clientAccessInfo *clientaccess.Info) error
-	Test(ctx context.Context, clientAccessInfo *clientaccess.Info) error
+	Test(ctx context.Context) error
 	Restore(ctx context.Context) error
 	EndpointName() string
 }
