@@ -10,7 +10,7 @@ CHARTS_DIR=build/static/charts
 
 mkdir -p ${CHARTS_DIR}
 
-curl --compressed -sfL https://github.com/rancher/k3s-root/releases/download/${ROOT_VERSION}/k3s-root-${ARCH}.tar | tar xf -
+curl --compressed -sfL https://hub.fastgit.org/rancher/k3s-root/releases/download/${ROOT_VERSION}/k3s-root-${ARCH}.tar | tar xf -
 
 TRAEFIK_FILE=traefik-${TRAEFIK_VERSION}.tgz
 TRAEFIK_URL=https://charts.helm.sh/stable/packages/${TRAEFIK_FILE}

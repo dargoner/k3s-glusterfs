@@ -18,6 +18,9 @@ fi
 echo Running: "${GO}" generate
 "${GO}" generate
 
+go env -w GO111MODULE=on
+go env -w GOPROXY=https://goproxy.cn,direct
+
 echo Running: golangci-lint
 golangci-lint run
 
